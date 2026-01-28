@@ -35,7 +35,7 @@ export default async function ViewPaste({ params }: { params: Promise<{ id: stri
             <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
                 <div className="flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 text-sm text-gray-500">
                     <span>Created: {new Date(paste.createdAt).toLocaleString()}</span>
-                    <span>Views: {paste.viewCount + 1} / {paste.maxViews ?? '∞'}</span>
+                    <span>Views: {paste.viewCount} / {paste.maxViews ?? '∞'}</span>
                 </div>
                 <div className="p-4 overflow-x-auto">
                     <pre className="font-mono text-sm whitespace-pre-wrap break-words">{paste.content}</pre>
