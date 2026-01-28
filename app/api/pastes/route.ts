@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
     try {
         const { content, expiresAt, maxViews } = await req.json();
 
-        if (!content) {
+        if (!content || typeof content !== 'string' || content.trim().length === 0) {
             return NextResponse.json({ error: 'Content is required' }, { status: 400 });
         }
 

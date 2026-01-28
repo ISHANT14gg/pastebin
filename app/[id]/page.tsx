@@ -1,31 +1,28 @@
-import { prisma } from '@/lib/db';
 import { notFound } from 'next/navigation';
 
+// Allow this page to be dynamic so it fetches fresh data every time
+export const dynamic = 'force-dynamic';
+
 async function getPaste(id: string) {
-    const paste = await prisma.paste.findUnique({
-        where: { id },
-    });
+    // Use the API route to ensure consistent logic (validation, view counting, etc.)
+    // We need an absolute URL for server-side fetches
+    const baseUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
 
-    if (!paste) return null;
+    try {
+        const res = await fetch(`${baseUrl}/api/pastes/${id}`, {
+            cache: 'no-store', // Never cache, we need fresh view counts
+        });
 
-    // Manual expiration check for Server Component render
-    // (Note: The API handles incrementing, but for the page load we might want to Hit the API? 
-    // OR just do the logic here. If we do logic here, we duplicate code. 
-    // BETTER: Call the DB logic directly, but handle "view" incrementing. 
-    // Since this IS a view, we should increment.
+        if (!res.ok) {
+            if (res.status === 404) return null;
+            throw new Error('Failed to fetch paste');
+        }
 
-    // Logic: 
-    // 1. Check expiry
-    if (paste.expiresAt && new Date() > paste.expiresAt) return null;
-    if (paste.maxViews !== null && paste.viewCount >= paste.maxViews) return null;
-
-    // 2. Increment view count
-    await prisma.paste.update({
-        where: { id },
-        data: { viewCount: { increment: 1 } },
-    });
-
-    return paste;
+        return res.json();
+    } catch (error) {
+        console.error("Error fetching paste:", error);
+        return null;
+    }
 }
 
 export default async function ViewPaste({ params }: { params: Promise<{ id: string }> }) {
@@ -45,8 +42,8 @@ export default async function ViewPaste({ params }: { params: Promise<{ id: stri
 
             <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
                 <div className="flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 text-sm text-gray-500">
-                    <span>Created: {paste.createdAt.toLocaleString()}</span>
-                    <span>Views: {paste.viewCount + 1} / {paste.maxViews ?? '∞'}</span>
+                    <span>Created: {new Date(paste.createdAt).toLocaleString()}</span>
+                    <span>Views: {paste.viewCount} / {paste.maxViews ?? '∞'}</span>
                 </div>
                 <div className="p-4 overflow-x-auto">
                     <pre className="font-mono text-sm whitespace-pre-wrap break-words">{paste.content}</pre>
@@ -55,7 +52,7 @@ export default async function ViewPaste({ params }: { params: Promise<{ id: stri
 
             {paste.expiresAt && (
                 <div className="mt-4 text-sm text-gray-500 text-center">
-                    Expires at: {paste.expiresAt.toLocaleString()}
+                    Expires at: {new Date(paste.expiresAt).toLocaleString()}
                 </div>
             )}
         </main>
