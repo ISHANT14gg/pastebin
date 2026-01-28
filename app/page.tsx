@@ -17,19 +17,34 @@ export default function Home() {
     setCreatedUrl('');
 
     try {
+      let ttl_seconds = null;
+      if (expiresAt) {
+        const expiresDate = new Date(expiresAt);
+        const now = new Date();
+        const diffMs = expiresDate.getTime() - now.getTime();
+        if (diffMs > 0) {
+          ttl_seconds = Math.floor(diffMs / 1000);
+        } else {
+          // If date is in past, maybe just ignore or throw? 
+          // Let's set to 1 second to expire it immediately if they picked past date
+          ttl_seconds = 1;
+        }
+      }
+
       const res = await fetch('/api/pastes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content,
-          expiresAt: expiresAt || null,
-          maxViews: maxViews ? parseInt(maxViews) : null,
+          ttl_seconds: ttl_seconds || undefined,
+          max_views: maxViews ? parseInt(maxViews) : undefined,
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
+        // If 400, show validation error
         throw new Error(data.error || 'Something went wrong');
       }
 
