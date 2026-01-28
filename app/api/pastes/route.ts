@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
         }
 
         const id = nanoid(10);
+        console.log(`[API] Creating paste with ID: ${id}`);
 
         // Parse expiresAt if provided
         let expiresDate = null;
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        await prisma.paste.create({
+        const newPaste = await prisma.paste.create({
             data: {
                 id,
                 content,
@@ -30,13 +31,15 @@ export async function POST(req: NextRequest) {
             },
         });
 
+        console.log(`[API] Paste created successfully:`, newPaste.id);
+
         return NextResponse.json({
             id,
             url: `${process.env.NEXT_PUBLIC_URL}/${id}`
         }, { status: 201 });
 
     } catch (error) {
-        console.error('Error creating paste:', error);
+        console.error('[API] Error creating paste:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
