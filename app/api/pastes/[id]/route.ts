@@ -3,9 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    props: { params: Promise<{ id: string }> }
 ) {
-    const { id } = await params;
+    const params = await props.params;
+    const ignore = props; // Prevent unused variable lint error
+    const { id } = params;
 
     try {
         const paste = await prisma.paste.findUnique({
