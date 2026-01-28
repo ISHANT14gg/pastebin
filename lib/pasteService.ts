@@ -4,7 +4,7 @@ export type PasteResult =
     | { success: true; data: any }
     | { success: false; error: string; status: number };
 
-export async function getAndIncrementPaste(id: string): Promise<PasteResult> {
+export async function getAndIncrementPaste(id: string, customNow?: Date): Promise<PasteResult> {
     try {
         const paste = await prisma.paste.findUnique({
             where: { id },
@@ -14,8 +14,10 @@ export async function getAndIncrementPaste(id: string): Promise<PasteResult> {
             return { success: false, error: 'Paste not found', status: 404 };
         }
 
+        const now = customNow || new Date();
+
         // Check time expiration
-        if (paste.expiresAt && new Date() > paste.expiresAt) {
+        if (paste.expiresAt && now > paste.expiresAt) {
             return { success: false, error: 'Paste expired', status: 404 };
         }
 
@@ -25,13 +27,8 @@ export async function getAndIncrementPaste(id: string): Promise<PasteResult> {
         }
 
         // Increment view count
-        // Note: We use update to ensure atomicity, but for the returned data
-        // we return the *original* paste (or updated). 
-        // Usually view pages show the state *before* the current view counts? 
-        // Or *after*? Let's return the one we found, but fire-and-forget the update 
-        // or await it. Awaiting is safer.
-
-        await prisma.paste.update({
+        // Note: We use update to ensure atomicity, and return the updated paste.
+        const updatedPaste = await prisma.paste.update({
             where: { id },
             data: {
                 viewCount: {
@@ -40,7 +37,7 @@ export async function getAndIncrementPaste(id: string): Promise<PasteResult> {
             },
         });
 
-        return { success: true, data: paste };
+        return { success: true, data: updatedPaste };
 
     } catch (error) {
         console.error('Error in getAndIncrementPaste:', error);

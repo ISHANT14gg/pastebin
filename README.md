@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pastebin-Lite
 
-## Getting Started
+A simple Pastebin clone built with Next.js 16 and Prisma, deployed on Vercel with Neon (Postgres).
 
-First, run the development server:
+## Running Locally
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/ISHANT14gg/pastebin.git
+    cd pastebin
+    ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2.  **Install Dependencies:**
+    ```bash
+    npm install
+    ```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3.  **Environment Setup:**
+    Create a `.env` file in the root directory:
+    ```env
+    DATABASE_URL="postgresql://user:password@host/neondb?sslmode=require"
+    NEXT_PUBLIC_URL="http://localhost:3000"
+    ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4.  **Run Development Server:**
+    ```bash
+    npm run dev
+    ```
+    Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Learn More
+## Persistence Layer
 
-To learn more about Next.js, take a look at the following resources:
+-   **Database:** PostgreSQL (hosted on Neon.tech).
+-   **ORM:** Prisma (v5.10.2).
+-   **Reasoning:** Postgres ensures data integrity and durability. Prisma provides type-safe database access. We use Prisma v5 for stability with Vercel's build environment.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Design Decisions
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+-   **Next.js App Router:** Leveraged for server-side rendering (SSR) of paste pages (`/p/[id]`) to ensure fast loads and SEO friendliness (if public).
+-   **Shared Service Layer:** Core logic (`getAndIncrementPaste`) is centralized in `lib/pasteService.ts`. This ensures that both the API (`/api/pastes/[id]`) and the View Page (`/p/[id]`) rely on the exact same limits and counting logic.
+-   **Deterministic Testing:** The application parses `x-test-now-ms` headers (when `TEST_MODE=1` env var is set). This timestamp is passed down to the service layer to simulate expiration scenarios accurately for automated grading.
+-   **Strict Validation:** The `POST` endpoint enforces strict types and boundaries (e.g., `ttl_seconds` must be a positive integer) to reject malformed requests early.
 
-## Deploy on Vercel
+## API Endpoints
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+-   `GET /api/healthz`: Health check ({ "ok": true }).
+-   `POST /api/pastes`: Create a paste.
+-   `GET /api/pastes/:id`: Retrieve paste metadata.
