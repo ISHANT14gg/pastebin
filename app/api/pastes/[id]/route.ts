@@ -1,12 +1,15 @@
 import { prisma } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
+type RouteProps = {
+    params: Promise<{ id: string }>
+}
+
 export async function GET(
     req: NextRequest,
-    props: { params: Promise<{ id: string }> }
+    props: RouteProps
 ) {
     const params = await props.params;
-    const ignore = props; // Prevent unused variable lint error
     const { id } = params;
 
     try {
@@ -24,14 +27,11 @@ export async function GET(
         }
 
         // Check view expiration
-        // We check >= because we are about to view it one more time, or if it was already hit.
-        // Actually require: if currently viewCount >= maxViews, then it's dead.
         if (paste.maxViews !== null && paste.viewCount >= paste.maxViews) {
             return NextResponse.json({ error: 'Paste expired' }, { status: 404 });
         }
 
         // Increment view count
-        // Use update to ensure atomicity
         await prisma.paste.update({
             where: { id },
             data: {
